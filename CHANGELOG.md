@@ -1,13 +1,7 @@
-# Changelog — `glitch-grow-public`
+# Changelog
 
-Auto-regenerated from `git log` by `/home/support/bin/changelog-regen`,
-called before every push by `/home/support/bin/git-sync-all` (cron `*/15 * * * *`).
-
-**Purpose:** traceability. If a push broke something, scan dates + short SHAs
-here; then `git show <sha>` to see the diff, `git revert <sha>` to undo.
-
-**Format:** UTC dates, newest first. Each entry: `time — subject (sha) — N files`.
-Body text (if present) shown as indented sub-bullets.
+Auto-generated from `git log`. UTC dates, newest first.
+Each entry: `time — subject (sha) — N files`; body shown as indented sub-bullets.
 
 ---
 

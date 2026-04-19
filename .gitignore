@@ -35,6 +35,7 @@ database.sqlite
 shopify.web.toml.bak
 
 # ─── Client-specific secrets that leak ────────────────
+cli/shops.json
 cli/shops.private.json
 cli/clients/*.env
 

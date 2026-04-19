@@ -29,11 +29,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const prisma = new PrismaClient();
 const API_VERSION = '2024-10';
 
-// Shop aliases — edit to add new clients
+// Shop aliases — create cli/shops.json ({ "alias": "store.myshopify.com" }) to add shortcuts.
+// File is gitignored so client domains never leak into the repo.
 const ALIASES_PATH = resolve(__dirname, 'shops.json');
 const ALIASES = existsSync(ALIASES_PATH)
   ? JSON.parse(readFileSync(ALIASES_PATH, 'utf8'))
-  : { mokshya: 'REDACTED.myshopify.com' };
+  : {};
 
 function resolveShop(arg) {
   if (!arg) die('Shop required. Usage: sh-admin <shop> <resource> <action>');

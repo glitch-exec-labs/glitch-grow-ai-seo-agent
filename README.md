@@ -84,7 +84,7 @@ The three mandatory Shopify privacy webhooks are implemented at `app/routes/webh
 ## Support
 
 - Email — [support@glitchexecutor.com](mailto:support@glitchexecutor.com)
-- Issues — [GitHub Issues](https://github.com/glitch-exec-labs/glitch-seo/issues)
+- Issues — [GitHub Issues](https://github.com/glitch-exec-labs/glitch-grow-seo/issues)
 
 ## License
 

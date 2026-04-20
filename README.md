@@ -1,8 +1,8 @@
-<h1 align="center">Glitch SEO</h1>
+<h1 align="center">Glitch Grow SEO</h1>
 
 <p align="center">
-  SEO audit and structured-data automation for Shopify stores —<br/>
-  built for both traditional search and AI answer engines.
+  AI SEO audit and structured-data automation for Shopify stores —<br/>
+  part of the Glitch Grow digital marketing stack for search and AI answer engines.
 </p>
 
 <p align="center">
@@ -13,6 +13,8 @@
 </p>
 
 ---
+
+> Part of **Glitch Grow**, the digital marketing domain inside **Glitch Executor Labs** — one builder shipping products across **Trade**, **Edge**, and **Grow**.
 
 ## What it does
 

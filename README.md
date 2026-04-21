@@ -1,4 +1,4 @@
-<h1 align="center">AI SEO Agent</h1>
+<h1 align="center">Glitch Grow AI SEO Agent</h1>
 
 <p align="center">
   An autonomous SEO agent for Shopify stores — audits structured data, ships
@@ -85,7 +85,7 @@ The three mandatory Shopify privacy webhooks are implemented at `app/routes/webh
 ## Support
 
 - Email — [support@glitchexecutor.com](mailto:support@glitchexecutor.com)
-- Issues — [GitHub Issues](https://github.com/glitch-exec-labs/ai-seo-agent/issues)
+- Issues — [GitHub Issues](https://github.com/glitch-exec-labs/glitch-grow-ai-seo-agent/issues)
 
 ## License
 

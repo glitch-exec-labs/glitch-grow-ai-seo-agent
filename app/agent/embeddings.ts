@@ -6,12 +6,14 @@
  * memory layer falls back to FTS-only retrieval.
  */
 import OpenAI from "openai";
+import { llmEnabled } from "./llmEnabled";
 
 const DIM = 1536; // matches text-embedding-3-small
 
 export async function embed(text: string): Promise<number[] | null> {
   if (!text.trim()) return null;
-  if (!process.env.OPENAI_API_KEY) return null;
+  // Embeddings also cost credits, so gate on the central kill switch.
+  if (!llmEnabled()) return null;
   try {
     const client = new OpenAI();
     const res = await client.embeddings.create({

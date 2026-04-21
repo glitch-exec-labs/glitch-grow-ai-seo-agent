@@ -5,6 +5,7 @@
 import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
@@ -29,7 +30,7 @@ export async function generateFaqSchema(
     mainEntity: [],
   };
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!llmEnabled()) {
     return fallback(proposal, defaultSchema);
   }
 

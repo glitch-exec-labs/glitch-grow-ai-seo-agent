@@ -116,6 +116,24 @@ model ClientMemory {
   learnedFacts    Json?
 }
 
+/// Per-product override of ClientMemory. Looked up by (siteId, handle)
+/// and merged on top of the site-level profile by the generators so an
+/// individual product can have its own voice / keyTerms / avoidTerms.
+model ProductMemory {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  siteId        String
+  productHandle String
+  brandVoice    String?  @db.Text
+  keyTerms      String[] @default([])
+  avoidTerms    String[] @default([])
+  notes         String?  @db.Text
+
+  @@unique([siteId, productHandle])
+  @@index([siteId])
+}
+
 /// A site the agent is attached to. v0 is Shopify-only (the Session row
 /// already scopes each store), but HTML/Wix sites need explicit records.
 model SiteConnection {

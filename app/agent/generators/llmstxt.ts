@@ -6,6 +6,7 @@
 import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
@@ -41,11 +42,11 @@ export async function generateLlmsTxt(
   cm: ClientMemory | null,
 ): Promise<PageEdit> {
   const fallbackContent = buildFallback(ctx, cm);
-  if (!process.env.OPENAI_API_KEY) {
+  if (!llmEnabled()) {
     return {
       kind: "llmstxt",
       content: fallbackContent,
-      rationale: proposal.rationale || "llms.txt published (fallback; no LLM available).",
+      rationale: proposal.rationale || "llms.txt published (fallback; LLM disabled).",
     };
   }
 

@@ -14,6 +14,11 @@ export {
   renderForPrompt as renderClientMemoryForPrompt,
 } from "./clientMemory";
 export type { ClientMemory } from "./clientMemory";
+export { loadProductMemory, saveProductMemory, mergeMemory } from "./productMemory";
+export type { ProductMemory } from "./productMemory";
+export { listProposals, decideProposal } from "./proposer";
+export type { ProposedFact } from "./proposer";
+export { llmEnabled, llmMode, llmDisabledReason } from "./llmEnabled";
 export type {
   AgentRunResult,
   Connector,

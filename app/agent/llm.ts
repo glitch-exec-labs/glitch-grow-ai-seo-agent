@@ -7,6 +7,7 @@
  * and logs the reason; a run never breaks because the LLM is unhappy.
  */
 import OpenAI from "openai";
+import { llmEnabled } from "./llmEnabled";
 import type { EditProposal, Finding, Signal } from "./types";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
@@ -58,7 +59,7 @@ export type PlannerOutput = {
 };
 
 export async function plan(input: PlannerInput): Promise<PlannerOutput> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!llmEnabled()) {
     return { findings: fallbackFindings(input.signals), skipped: true };
   }
   const client = new OpenAI();

@@ -57,6 +57,9 @@ app/agent/
   embeddings.ts         OpenAI embedding shim for memory retrieval
   memory.ts             Agent memory — pgvector + recency-decay retrieval
   clientMemory.ts       Client memory — stable per-site brand profile
+  productMemory.ts      Per-product override of client memory
+  llmEnabled.ts         Central LLM kill switch (AGENT_LLM_MODE)
+  proposer.ts           Post-audit LLM step that suggests client-memory additions
   runner.ts             runAudit / previewEdit / applyEdit entry points
   generators/           Hydrate an EditProposal → concrete PageEdit
     organization.ts       Deterministic Organization JSON-LD
@@ -93,9 +96,29 @@ Product copy rewrites go through the standard `productUpdate` Admin mutation.
 
 ### Environment
 
-- `OPENAI_API_KEY` — powers the planner (`gpt-4o`) and memory embeddings (`text-embedding-3-small`). Without it, the agent still runs and emits deterministic findings, but skips LLM planning and vector similarity.
-- `OPENAI_MODEL` — default `gpt-4o`.
-- `EMBEDDING_MODEL` — default `text-embedding-3-small`.
+**Cost safety first.** The agent is designed so production deploys never burn LLM credits until you explicitly opt in:
+
+| Var | Default | Purpose |
+|---|---|---|
+| `AGENT_LLM_MODE` | `off` | **Central LLM kill switch.** Must be `live` for any OpenAI call (planner, generators, embeddings, fact proposer). When `off`, the agent still audits + applies deterministic fixes. |
+| `OPENAI_API_KEY` | unset | Single key powers planner, generators, embeddings, proposer. |
+| `OPENAI_MODEL` | `gpt-4o` | Planner + generator model. |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | 1536-dim, matches the pgvector column. |
+| `AGENT_CRON_ENABLED` | `false` | Opt-in for scheduled audits via `POST /agent/cron/run`. |
+| `AGENT_CRON_TOKEN` | unset | Shared secret checked against `x-cron-token` header. |
+
+### Scheduled audits
+
+One endpoint, two independent gates:
+
+```
+POST /agent/cron/run
+  headers: x-cron-token: $AGENT_CRON_TOKEN
+```
+
+Iterates over every installed shop in `Session`, runs one audit per shop, returns a per-shop summary. Gated by `AGENT_CRON_ENABLED=true` **and** the header token. If `AGENT_LLM_MODE=off`, audits still run but the planner and LLM generators skip (no credit burn) — useful for daily-snapshot runs in prod while the LLM pathway is reviewed.
+
+Point any external scheduler (system cron, Cloudflare Workers cron, GitHub Actions, etc.) at it.
 
 ## Stack
 

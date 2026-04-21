@@ -12,6 +12,7 @@ import prisma from "../db.server";
 import { ensureClientMemory, loadClientMemory } from "./clientMemory";
 import { plan } from "./llm";
 import { logRun, recall } from "./memory";
+import { proposeFacts } from "./proposer";
 import { extractSignals, summarize } from "./signals";
 import { generateEdit } from "./generators";
 import type {
@@ -25,11 +26,12 @@ import type {
 export async function runAudit(connector: Connector): Promise<AgentRunResult> {
   const ranAt = new Date();
   // Seed ClientMemory from platform data on first run.
-  await ensureClientMemory(connector);
+  const cm = await ensureClientMemory(connector);
 
   const samples = await connector.crawlSample({ maxPages: 4 });
   const signals = extractSignals(samples);
   const summary = summarize(signals);
+  const homeSample = samples.find((s) => s.role === "home") ?? samples[0];
 
   const query = signals.filter((s) => s.status === false).map((s) => s.id).join(" ");
   const priorContext = await recall({
@@ -70,6 +72,17 @@ export async function runAudit(connector: Connector): Promise<AgentRunResult> {
     signals,
     findings: planned.findings,
     summary,
+  });
+
+  // Fire-and-forget: ask the LLM to suggest ClientMemory additions from
+  // what it observed. No-op unless AGENT_LLM_MODE=live.
+  void proposeFacts({
+    siteId: connector.siteId,
+    shopName: cm?.brandName ?? null,
+    storefrontUrl: typeof (homeSample?.url) === "string" ? homeSample.url : null,
+    signals,
+    current: cm,
+    homeHtmlSnippet: homeSample?.html?.slice(0, 6000) ?? null,
   });
 
   return {

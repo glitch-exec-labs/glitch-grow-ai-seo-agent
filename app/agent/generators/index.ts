@@ -13,6 +13,7 @@
  * so output stays on-brand.
  */
 import type { ClientMemory } from "../clientMemory";
+import { loadProductMemory, mergeMemory } from "../productMemory";
 import type { Connector, EditProposal, PageEdit } from "../types";
 import { generateOrganizationSchema } from "./organization";
 import { generateWebsiteSchema } from "./website";
@@ -34,7 +35,13 @@ export async function generateEdit(
   opts: GenerateOpts = {},
 ): Promise<PageEdit> {
   const ctx = await connector.fetchContext(proposal.scope, proposal.productHandle);
-  const cm = opts.clientMemory ?? null;
+  let cm = opts.clientMemory ?? null;
+
+  // Per-product overrides merge on top of the site-level profile.
+  if (proposal.scope === "product" && proposal.productHandle) {
+    const pm = await loadProductMemory(connector.siteId, proposal.productHandle);
+    cm = mergeMemory(cm, pm);
+  }
 
   switch (proposal.kind) {
     case "jsonld":

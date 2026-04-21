@@ -5,6 +5,7 @@
 import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
@@ -31,12 +32,12 @@ export async function generateCopyRewrite(
     (typeof ctx.handle === "string" ? (ctx.handle as string) : "");
   if (!handle) throw new Error("generateCopyRewrite: productHandle required");
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!llmEnabled()) {
     return {
       kind: "copy",
       productHandle: handle,
       descriptionHtml: typeof ctx.description === "string" ? (ctx.description as string) : "",
-      rationale: proposal.rationale || "Copy unchanged (no LLM available).",
+      rationale: proposal.rationale || "Copy unchanged (LLM disabled).",
     };
   }
 

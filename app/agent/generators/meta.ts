@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
@@ -26,7 +27,7 @@ export async function generateMetaDescription(
     rationale: proposal.rationale || "Meta description (fallback).",
   };
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!llmEnabled()) {
     return {
       ...fallback,
       title: cm?.brandName || (typeof ctx.name === "string" ? (ctx.name as string) : ""),

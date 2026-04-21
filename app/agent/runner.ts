@@ -1,15 +1,15 @@
 /**
  * Agent orchestration. Three entry points:
  *
- *   runAudit(connector)                   — the full read-only audit loop
- *   previewEdit(connector, proposal, sid) — hydrate proposal into a PageEdit
- *                                           (preview only, no write)
- *   applyEdit(connector, edit, signalId)  — write + verify (throws on failure)
+ *   runAudit(connector)                   — full read-only audit loop
+ *   previewEdit(connector, proposal, sid) — hydrate proposal → PageEdit
+ *   applyEdit(connector, edit, signalId)  — write + verify
  *
- * Every stage is fail-open on reads and strict on writes: a merchant
- * clicking Apply should get a clear error if the write failed.
+ * ClientMemory is loaded once per entry and threaded through the
+ * generators + planner so every LLM call is brand-consistent.
  */
 import prisma from "../db.server";
+import { ensureClientMemory, loadClientMemory } from "./clientMemory";
 import { plan } from "./llm";
 import { logRun, recall } from "./memory";
 import { extractSignals, summarize } from "./signals";
@@ -24,6 +24,9 @@ import type {
 
 export async function runAudit(connector: Connector): Promise<AgentRunResult> {
   const ranAt = new Date();
+  // Seed ClientMemory from platform data on first run.
+  await ensureClientMemory(connector);
+
   const samples = await connector.crawlSample({ maxPages: 4 });
   const signals = extractSignals(samples);
   const summary = summarize(signals);
@@ -87,7 +90,8 @@ export async function previewEdit(
   proposal: EditProposal,
   signalId?: string,
 ): Promise<PageEdit> {
-  return generateEdit(connector, proposal, { signalId });
+  const clientMemory = await loadClientMemory(connector.siteId);
+  return generateEdit(connector, proposal, { signalId, clientMemory });
 }
 
 export async function applyEdit(
@@ -105,8 +109,6 @@ async function tryVerify(
   edit: PageEdit,
   signalId?: string,
 ): Promise<VerifyResult | null> {
-  // Map edit kind to a lightweight HTML expectation so verify() is
-  // meaningful without re-running the full audit.
   const expect = buildExpectation(edit, signalId);
   const url = await bestVerifyUrl(connector, edit);
   if (!url || !expect) return null;
@@ -128,20 +130,14 @@ function buildExpectation(
     return (html) => needle.test(html);
   }
   if (edit.kind === "meta") {
-    if (edit.description) {
-      return (html) => html.includes(edit.description!.slice(0, 40));
-    }
+    if (edit.description) return (html) => html.includes(edit.description!.slice(0, 40));
     return null;
   }
-  if (edit.kind === "llmstxt") {
-    // verified via direct llms.txt fetch in the UI, not here
-    return null;
-  }
+  if (edit.kind === "llmstxt") return null;
   if (edit.kind === "copy") {
     const snippet = edit.descriptionHtml.replace(/<[^>]+>/g, " ").slice(0, 60);
     return (html) => html.includes(snippet);
   }
-  // Exhaustive fallback — unused.
   void signalId;
   return null;
 }

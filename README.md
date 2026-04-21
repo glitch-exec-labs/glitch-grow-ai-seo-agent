@@ -23,7 +23,7 @@ An autonomous SEO agent that plugs into **any website** — Shopify today, plain
 
 - **Audit.** Deterministic signal extraction across structured data, breadcrumbs, canonical, `og:image`, semantic H1, meta description, and AI-search readiness (`llms.txt`).
 - **Plan.** An LLM planner (OpenAI `gpt-4o`) synthesizes the signals plus prior-run memory into a ranked list of findings, each carrying an executable edit proposal.
-- **Memory.** Every run is persisted to a pgvector-backed memory table; hybrid retrieval (vector + recency decay) feeds the planner prior context so it doesn't resurface already-fixed issues.
+- **Memory.** Two layers. **Agent memory** — every run is persisted to a pgvector-backed table; hybrid retrieval (vector + recency) feeds the planner prior context so it doesn't resurface already-fixed issues. **Client memory** — a stable per-site brand profile (voice, audience, differentiators, policies, social) that every LLM generator reads to stay on-brand.
 - **Execute.** Preview-first writes: the agent generates the exact change (JSON-LD schema, meta tags, `llms.txt`, rewritten product copy), shows it to the merchant, and applies it via shop/product metafields or `productUpdate` only on confirm.
 - **Verify.** Re-fetches the live page after the write and confirms the expected signal is now present.
 
@@ -55,7 +55,8 @@ app/agent/
   signals.ts            Deterministic HTML signal extractor (regex-only)
   llm.ts                OpenAI gpt-4o planner — fail-open if no API key
   embeddings.ts         OpenAI embedding shim for memory retrieval
-  memory.ts             pgvector + recency-decay hybrid retrieval
+  memory.ts             Agent memory — pgvector + recency-decay retrieval
+  clientMemory.ts       Client memory — stable per-site brand profile
   runner.ts             runAudit / previewEdit / applyEdit entry points
   generators/           Hydrate an EditProposal → concrete PageEdit
     organization.ts       Deterministic Organization JSON-LD

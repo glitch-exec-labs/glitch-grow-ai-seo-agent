@@ -148,6 +148,16 @@ export default function Index() {
         </s-section>
       )}
 
+      <s-section slot="aside" heading="Client memory">
+        <s-paragraph>
+          Long-term brand profile the agent reads on every generation.
+          Setting voice, differentiators, policies, and social links here
+          makes every FAQ, meta description, and copy rewrite stay
+          on-brand.
+        </s-paragraph>
+        <s-link href="/app/client-memory">Edit client memory →</s-link>
+      </s-section>
+
       <s-section slot="aside" heading="First-time setup">
         <s-paragraph>
           The agent writes schema into shop + product metafields under

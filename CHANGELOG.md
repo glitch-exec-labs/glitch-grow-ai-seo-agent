@@ -13,7 +13,20 @@ Body text (if present) shown as indented sub-bullets.
 
 ## 2026-04-22
 
-- **09:45 UTC** — auto-sync: 2026-04-22 09:45 UTC (`7b4963f`) — 2 files
+- **10:15 UTC** — auto-sync: 2026-04-22 10:15 UTC (`ad4643e`) — 1 file
+        A	agent/scripts/inject_datalayer.py
+- **09:53 UTC** — feat(agent): audit + wire GA4 tags across 4 brand GTM containers (`ae6c7c0`) — 2 files
+    Tag Manager API v2 wired into the Python agent. After GTM was
+    installed in theme.liquid earlier, all 4 containers were empty (GTM
+    loaded on the page, nothing fired). This commit fixes that.
+    agent/src/glitch_seo_agent/clients/tag_manager.py:
+    - Singleton discovery client (@lru_cache) — avoids re-fetching the
+      discovery document on every call.
+    - Throttled to ~3 s/call to stay under GTM's 25-queries/100s quota.
+    - Caches account + container listings so repeated
+      find_container_by_public_id() lookups don't thrash quota.
+    - Scopes: readonly, edit.containers, edit.containerversions, publish.
+- **09:45 UTC** — auto-sync: 2026-04-22 09:45 UTC (`ffb40c0`) — 3 files
         A	agent/scripts/audit_gtm.py
         A	agent/src/glitch_seo_agent/clients/tag_manager.py
 - **09:40 UTC** — feat(agent): direct theme.liquid GTM installer for the 4 brand stores (`ff1e0af`) — 2 files

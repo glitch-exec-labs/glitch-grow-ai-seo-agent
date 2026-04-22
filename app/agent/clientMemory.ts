@@ -27,6 +27,7 @@ export interface ClientMemory {
   returnsInfo?: string | null;
   sameAs: string[];
   notes?: string | null;
+  gtmContainerId?: string | null;
 }
 
 const EMPTY = {
@@ -91,6 +92,7 @@ export async function saveClientMemory(
   for (const k of [
     "brandName", "tagline", "brandVoice", "targetAudience",
     "differentiators", "shippingInfo", "returnsInfo", "notes",
+    "gtmContainerId",
   ] as const) {
     if (k in patch) data[k] = patch[k] ?? null;
   }
@@ -143,6 +145,7 @@ function toClientMemory(row: {
   returnsInfo: string | null;
   sameAs: string[];
   notes: string | null;
+  gtmContainerId?: string | null;
 }): ClientMemory {
   return {
     siteId: row.siteId,
@@ -159,5 +162,6 @@ function toClientMemory(row: {
     returnsInfo: row.returnsInfo,
     sameAs: row.sameAs ?? [],
     notes: row.notes,
+    gtmContainerId: row.gtmContainerId ?? null,
   };
 }

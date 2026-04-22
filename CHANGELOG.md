@@ -13,7 +13,36 @@ Body text (if present) shown as indented sub-bullets.
 
 ## 2026-04-22
 
-- **07:30 UTC** — auto-sync: 2026-04-22 07:30 UTC (`9603991`) — 2 files
+- **09:15 UTC** — auto-sync: 2026-04-22 09:15 UTC (`58cdeb4`) — 7 files
+        M	app/agent/clientMemory.ts
+        M	app/routes/app.client-memory.jsx
+        A	cli/seed-brand.mjs
+        A	extensions/glitch-grow-seo-schema/blocks/gtm-body.liquid
+        M	extensions/glitch-grow-seo-schema/blocks/schema.liquid
+        ... (+2 more)
+- **07:52 UTC** — feat(agent): Gemini LLM provider — 2.5-flash + gemini-embedding-001 @ 1536d (`55409d8`) — 12 files
+    Replace OpenAI as the primary LLM behind a provider abstraction so
+    both stay wired without code-site changes.
+    - New app/agent/llmClient.ts:
+      - complete({ system, user, format, maxTokens, temperature })
+        returns { text, model, provider, error? } — fail-open, never throws
+      - embed(text) returns 1536-dim vector regardless of provider
+      - activeProvider(): picks AGENT_LLM_PROVIDER explicitly, else
+        auto-detects Gemini > OpenAI based on which key is set
+    - llmEnabled(): accepts either provider's key under live mode.
+    - Every LLM call site now routes through llmClient:
+- **07:31 UTC** — chore(agent): drop SERP from v1 — Google deprecated "Search entire web" (`b30b524`) — 1 file
+    Context: Programmable Search Engines created after Oct 2024 cannot
+    enable "Search the entire web" anymore; the feature is deprecated.
+    Custom Search JSON now only queries a caller-supplied site list,
+    which defeats the original "where does our brand rank" use case.
+    GSC top_queries already gives the same signal for our own sites.
+    - reports/daily.py: drop serp_pull call + snapshot field + DB column.
+      SeoReport.serp column stays (nullable) — future paid SERP provider
+      can still write to it without another migration.
+    - pulls/serp.py: kept as scaffolding with an explicit "not wired"
+      docstring pointing at two paths forward (competitor-list CSE or
+- **07:30 UTC** — auto-sync: 2026-04-22 07:30 UTC (`c45e438`) — 3 files
         M	agent/src/glitch_seo_agent/pulls/serp.py
         M	agent/src/glitch_seo_agent/reports/daily.py
 - **06:54 UTC** — feat(agent): A + B + C — planner reads SeoReport, /fleet drill-down, Custom Search (`fe0404d`) — 17 files

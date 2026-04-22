@@ -42,6 +42,7 @@ export const action = async ({ request }) => {
     shippingInfo: getString("shippingInfo") || null,
     returnsInfo: getString("returnsInfo") || null,
     notes: getString("notes") || null,
+    gtmContainerId: getString("gtmContainerId") || null,
     categories: getList("categories"),
     keyTerms: getList("keyTerms"),
     avoidTerms: getList("avoidTerms"),
@@ -116,6 +117,26 @@ export default function ClientMemory() {
               rows={3}
             />
             <s-text-area label="Notes (free-form brand context)" name="notes" defaultValue={current.notes ?? ""} rows={4} />
+          </s-stack>
+        </s-section>
+
+        <s-section heading="Analytics & tags">
+          <s-stack direction="block" gap="base">
+            <s-paragraph>
+              Paste your Google Tag Manager container id below (format{" "}
+              <code>GTM-XXXXXXX</code>). When set, the Glitch Grow SEO
+              theme app embed injects the GTM <code>&lt;script&gt;</code> into{" "}
+              <code>&lt;head&gt;</code> and the <code>&lt;noscript&gt;</code>{" "}
+              <code>&lt;iframe&gt;</code> into <code>&lt;body&gt;</code>. You must
+              also enable the two GTM blocks under{" "}
+              <s-text weight="bold">Theme Editor → App embeds</s-text>.
+            </s-paragraph>
+            <s-text-field
+              label="GTM container id"
+              name="gtmContainerId"
+              defaultValue={current.gtmContainerId ?? ""}
+              placeholder="GTM-XXXXXXX"
+            />
           </s-stack>
         </s-section>
 

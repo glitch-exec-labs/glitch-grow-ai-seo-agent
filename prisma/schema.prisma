@@ -124,6 +124,10 @@ model ClientMemory {
   /// Brand queries for Custom Search SERP snapshotting. Empty →
   /// auto-derived ("<brand>", "<brand> review", "<domain>").
   brandQueries    String[] @default([])
+
+  /// Google Tag Manager container id (e.g. "GTM-XXXXX"). When set,
+  /// the theme app embed block injects the GTM <script> + <noscript>.
+  gtmContainerId  String?
 }
 
 /// Long-form reports from the Python signal-pull pipeline.

@@ -1,0 +1,30 @@
+{%- comment -%}
+  Glitch Grow AI SEO Agent — GTM <noscript> body block.
+
+  Emits the Google Tag Manager noscript <iframe> immediately inside
+  <body> when the merchant has configured a container id under the
+  `glitch_grow_seo.gtm_container_id` shop metafield. Paired with the
+  head block in schema.liquid — both must be enabled for GTM to work.
+
+  Merchants enable once from Theme Editor → App embeds.
+{%- endcomment -%}
+
+{%- liquid
+  assign ns = 'glitch_grow_seo'
+  assign gtm_id = shop.metafields[ns].gtm_container_id | default: ''
+-%}
+
+{%- if gtm_id != blank -%}
+  <!-- Google Tag Manager noscript (glitch-grow-seo) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ gtm_id | escape }}"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager noscript -->
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Glitch Grow GTM (body)",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

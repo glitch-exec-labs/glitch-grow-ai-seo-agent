@@ -19,7 +19,23 @@
   assign faq = shop.metafields[ns].jsonld_faq.value
   assign meta_title_shop = shop.metafields[ns].meta_title | default: ''
   assign meta_desc_shop = shop.metafields[ns].meta_description | default: ''
+  assign gtm_id = shop.metafields[ns].gtm_container_id | default: ''
 -%}
+
+{%- comment -%}
+  Google Tag Manager head snippet. Only emits when the merchant has set
+  glitch_grow_seo.gtm_container_id via the admin UI. Paired with the
+  body-target block that emits the <noscript> <iframe>.
+{%- endcomment -%}
+{%- if gtm_id != blank -%}
+  <!-- Google Tag Manager (glitch-grow-seo) -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','{{ gtm_id | escape }}');</script>
+  <!-- End Google Tag Manager -->
+{%- endif -%}
 
 {%- if org != blank -%}
   <script type="application/ld+json">{{ org | json }}</script>

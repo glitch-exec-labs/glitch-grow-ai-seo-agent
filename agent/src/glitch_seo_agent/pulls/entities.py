@@ -65,32 +65,49 @@ async def pull(site: SiteRecord, *, fallback_urls: Iterable[str] = ()) -> dict[s
                 pages.append({"url": url, "error": f"nlp_failed: {e}"})
                 continue
 
+            # Filter BEFORE truncating. NLP tends to list NUMBER/DATE
+            # entities first on long responses; a naive [:50] slice
+            # discards the useful ORGANIZATION/PERSON tail.
+            filtered = [
+                e for e in (nlp.get("entities") or [])
+                if e.get("type") in SEMANTIC_TYPES and e.get("name")
+            ]
             pages.append(
                 {
                     "url": url,
                     "language": nlp.get("language_code"),
-                    "entities": nlp.get("entities", [])[:50],
+                    "entities": filtered[:50],
                 }
             )
 
-    # Rank semantic types only — filter out NUMBER/DATE/PRICE noise.
     all_names = [
         e["name"]
         for p in pages
         for e in p.get("entities") or []
-        if e.get("name") and e.get("type") in SEMANTIC_TYPES
     ]
     top = _top_n(all_names, n=15)
 
     return {"pages": pages, "top_entities": top}
 
 
+# Strip <script> and <style> blocks (including their contents) BEFORE
+# stripping tags — otherwise NLP ingests inlined JSON-LD, Astro island
+# state, and CSS, all of which are numeric-heavy and crowd out real
+# entities.
+_SCRIPT_OR_STYLE = re.compile(
+    r"<(script|style|noscript)\b[^>]*>.*?</\1>",
+    re.IGNORECASE | re.DOTALL,
+)
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _HTML_TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
 
 
 def _strip_html(s: str) -> str:
-    return _WS.sub(" ", _HTML_TAG.sub(" ", s)).strip()
+    s = _SCRIPT_OR_STYLE.sub(" ", s)
+    s = _HTML_COMMENT.sub(" ", s)
+    s = _HTML_TAG.sub(" ", s)
+    return _WS.sub(" ", s).strip()
 
 
 def _resolve_urls(site: SiteRecord, fallback_urls: Iterable[str]) -> list[str]:

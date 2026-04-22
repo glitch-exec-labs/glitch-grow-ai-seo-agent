@@ -52,6 +52,8 @@ def _creds():
         scopes=[
             "https://www.googleapis.com/auth/tagmanager.readonly",
             "https://www.googleapis.com/auth/tagmanager.edit.containers",
+            # create_version lives under a separate scope from edit.containers
+            "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
             "https://www.googleapis.com/auth/tagmanager.publish",
         ],
     )

@@ -1,14 +1,11 @@
 /**
- * FAQPage JSON-LD — LLM-generated. ClientMemory is injected so Q&A
- * reflects real shipping/returns policy, voice, and audience.
+ * FAQPage JSON-LD — LLM-generated. Provider-agnostic.
  */
-import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { complete } from "../llmClient";
 import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 const SYSTEM = `You write FAQPage JSON-LD for online stores. Return strict JSON.
 Shape: {"mainEntity":[{"@type":"Question","name":"...","acceptedAnswer":{"@type":"Answer","text":"..."}},...]}
@@ -30,26 +27,22 @@ export async function generateFaqSchema(
     mainEntity: [],
   };
 
-  if (!llmEnabled()) {
-    return fallback(proposal, defaultSchema);
-  }
+  if (!llmEnabled()) return fallback(proposal, defaultSchema);
+
+  const memory = renderForPrompt(cm);
+  const userPayload = `Shop context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}\n\nReturn the mainEntity array.`;
+
+  const res = await complete({
+    system: SYSTEM,
+    user: userPayload,
+    format: "json",
+    maxTokens: 1200,
+    temperature: 0.3,
+  });
+  if (res.error) return fallback(proposal, defaultSchema);
 
   try {
-    const client = new OpenAI();
-    const memory = renderForPrompt(cm);
-    const userPayload = `Shop context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}\n\nReturn the mainEntity array.`;
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 1200,
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: userPayload },
-      ],
-    });
-    const text = res.choices[0]?.message?.content ?? "";
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(res.text || "{}");
     const mainEntity = Array.isArray(parsed.mainEntity) ? parsed.mainEntity : [];
     return {
       kind: "jsonld",

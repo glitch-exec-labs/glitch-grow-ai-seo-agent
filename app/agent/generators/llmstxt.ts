@@ -1,15 +1,12 @@
 /**
- * llms.txt generator — LLM-generated site manifest, grounded in both
- * platform context and the merchant's ClientMemory (brand, voice,
- * differentiators, policies, social).
+ * llms.txt generator — LLM-generated site manifest for AI answer
+ * engines. Provider-agnostic.
  */
-import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { complete } from "../llmClient";
 import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 const SYSTEM = `You write llms.txt manifests for online stores. Output markdown only, no fences.
 Structure:
@@ -50,32 +47,29 @@ export async function generateLlmsTxt(
     };
   }
 
-  try {
-    const client = new OpenAI();
-    const memory = renderForPrompt(cm);
-    const userPayload = `Shop context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`;
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 1000,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: userPayload },
-      ],
-    });
-    const content = (res.choices[0]?.message?.content ?? fallbackContent).trim();
-    return {
-      kind: "llmstxt",
-      content,
-      rationale: proposal.rationale || "llms.txt enables AI answer engines to cite this site.",
-    };
-  } catch {
+  const memory = renderForPrompt(cm);
+  const userPayload = `Shop context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`;
+
+  const res = await complete({
+    system: SYSTEM,
+    user: userPayload,
+    format: "text",
+    maxTokens: 1000,
+    temperature: 0.2,
+  });
+  if (res.error) {
     return {
       kind: "llmstxt",
       content: fallbackContent,
       rationale: proposal.rationale || "llms.txt published (fallback; LLM error).",
     };
   }
+
+  return {
+    kind: "llmstxt",
+    content: (res.text || fallbackContent).trim(),
+    rationale: proposal.rationale || "llms.txt enables AI answer engines to cite this site.",
+  };
 }
 
 function buildFallback(

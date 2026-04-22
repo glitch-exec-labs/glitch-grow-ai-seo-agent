@@ -1,10 +1,8 @@
-import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { complete } from "../llmClient";
 import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 const SYSTEM = `You write SEO meta titles and descriptions. Return strict JSON:
 {"title":"...", "description":"..."}
@@ -35,21 +33,24 @@ export async function generateMetaDescription(
     };
   }
 
+  const memory = renderForPrompt(cm);
+  const res = await complete({
+    system: SYSTEM,
+    user: `Context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`,
+    format: "json",
+    maxTokens: 300,
+    temperature: 0.3,
+  });
+
+  if (res.error) {
+    return {
+      ...fallback,
+      description: typeof ctx.description === "string" ? (ctx.description as string).slice(0, 155) : undefined,
+    };
+  }
+
   try {
-    const client = new OpenAI();
-    const memory = renderForPrompt(cm);
-    const userPayload = `Context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`;
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 300,
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: userPayload },
-      ],
-    });
-    const parsed = JSON.parse(res.choices[0]?.message?.content ?? "{}");
+    const parsed = JSON.parse(res.text || "{}");
     return {
       ...fallback,
       title: typeof parsed.title === "string" ? parsed.title.slice(0, 60) : undefined,

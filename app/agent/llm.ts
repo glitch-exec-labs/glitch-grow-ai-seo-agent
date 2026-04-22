@@ -1,17 +1,12 @@
 /**
  * LLM planner — synthesizes ranked, executable findings from
- * deterministic signals plus prior memory.
- *
- * Powered by OpenAI `gpt-4o`. Fail-open: if OPENAI_API_KEY is unset or
- * the call errors, the agent returns deterministic fallback findings
- * and logs the reason; a run never breaks because the LLM is unhappy.
+ * deterministic signals plus prior memory. Provider-agnostic (Gemini
+ * or OpenAI) via llmClient. Fail-open: if LLM is disabled or the call
+ * errors, the agent returns deterministic fallback findings.
  */
-import OpenAI from "openai";
+import { complete } from "./llmClient";
 import { llmEnabled } from "./llmEnabled";
 import type { EditProposal, Finding, Signal } from "./types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
-const MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPT = `You are the planner node of an autonomous SEO agent that operates across Shopify, plain HTML, and Wix websites.
 
@@ -51,8 +46,6 @@ export type PlannerInput = {
   platform: string;
   signals: Signal[];
   priorContext?: string;
-  /** <site_traffic> block from the latest SeoReport. When present,
-   *  the planner weights findings by real impression/click data. */
   siteTraffic?: string;
 };
 
@@ -67,7 +60,6 @@ export async function plan(input: PlannerInput): Promise<PlannerOutput> {
   if (!llmEnabled()) {
     return { findings: fallbackFindings(input.signals), skipped: true };
   }
-  const client = new OpenAI();
 
   const userPayload = {
     siteId: input.siteId,
@@ -84,34 +76,23 @@ export async function plan(input: PlannerInput): Promise<PlannerOutput> {
     site_traffic: input.siteTraffic || "",
   };
 
-  try {
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Site signals and prior memory below. Return findings JSON.\n\n${JSON.stringify(
-            userPayload,
-            null,
-            2
-          )}`,
-        },
-      ],
-    });
-    const text = res.choices[0]?.message?.content ?? "";
-    const parsed = safeParseFindings(text);
-    return { findings: parsed, model: MODEL, skipped: false };
-  } catch (err) {
+  const res = await complete({
+    system: SYSTEM_PROMPT,
+    user: `Site signals and prior memory below. Return findings JSON.\n\n${JSON.stringify(userPayload, null, 2)}`,
+    format: "json",
+    maxTokens: 2048,
+    temperature: 0.2,
+  });
+
+  if (res.error) {
     return {
       findings: fallbackFindings(input.signals),
       skipped: true,
-      error: err instanceof Error ? err.message : String(err),
+      error: res.error,
     };
   }
+  const parsed = safeParseFindings(res.text);
+  return { findings: parsed, model: `${res.provider}:${res.model}`, skipped: false };
 }
 
 function safeParseFindings(raw: string): Finding[] {
@@ -124,8 +105,7 @@ function safeParseFindings(raw: string): Finding[] {
       .filter((f: unknown) => typeof f === "object" && f !== null)
       .map((f: Record<string, unknown>, i: number) => ({
         id: String(f.id ?? `finding-${i}`),
-        severity:
-          (f.severity as Finding["severity"]) ?? ("info" as const),
+        severity: (f.severity as Finding["severity"]) ?? ("info" as const),
         title: String(f.title ?? "Untitled finding"),
         body: String(f.body ?? ""),
         evidence: Array.isArray(f.evidence)
@@ -144,8 +124,7 @@ function safeParseEdit(raw: unknown): EditProposal | null {
   if (!raw || typeof raw !== "object") return null;
   const e = raw as Record<string, unknown>;
   const kind = e.kind;
-  if (kind !== "jsonld" && kind !== "meta" && kind !== "llmstxt" && kind !== "copy")
-    return null;
+  if (kind !== "jsonld" && kind !== "meta" && kind !== "llmstxt" && kind !== "copy") return null;
   const scope = (e.scope as EditProposal["scope"]) ?? "shop";
   return {
     kind: kind as EditProposal["kind"],
@@ -170,7 +149,6 @@ function fallbackFindings(signals: Signal[]): Finding[] {
 }
 
 function proposeFallbackEdit(s: Signal): EditProposal | null {
-  // Map a failing signal to the edit the executor would apply.
   if (s.id.endsWith("home.jsonld.organization"))
     return { kind: "jsonld", scope: "shop", rationale: "Add Organization schema" };
   if (s.id.endsWith("home.jsonld.website"))

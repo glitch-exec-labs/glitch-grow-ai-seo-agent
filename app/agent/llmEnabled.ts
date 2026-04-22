@@ -20,11 +20,15 @@ export function llmMode(): LlmMode {
 }
 
 export function llmEnabled(): boolean {
-  return llmMode() === "live" && !!process.env.OPENAI_API_KEY;
+  if (llmMode() !== "live") return false;
+  // Either provider is acceptable; llmClient.activeProvider() picks.
+  return !!process.env.GEMINI_API_KEY || !!process.env.OPENAI_API_KEY;
 }
 
 export function llmDisabledReason(): string | null {
   if (llmMode() === "off") return "AGENT_LLM_MODE is not 'live' (default).";
-  if (!process.env.OPENAI_API_KEY) return "OPENAI_API_KEY is not set.";
+  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+    return "Neither GEMINI_API_KEY nor OPENAI_API_KEY is set.";
+  }
   return null;
 }

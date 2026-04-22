@@ -1,14 +1,11 @@
 /**
- * Product description rewrite. ClientMemory enforces brand voice,
- * preferred terminology, and banned terms.
+ * Product description rewrite — LLM-generated. Provider-agnostic.
  */
-import OpenAI from "openai";
 import type { ClientMemory } from "../clientMemory";
 import { renderForPrompt } from "../clientMemory";
+import { complete } from "../llmClient";
 import { llmEnabled } from "../llmEnabled";
 import type { EditProposal, PageEdit } from "../types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 const SYSTEM = `You rewrite Shopify product descriptions to be citable by AI answer engines while staying on-brand.
 
@@ -41,34 +38,28 @@ export async function generateCopyRewrite(
     };
   }
 
-  try {
-    const client = new OpenAI();
-    const memory = renderForPrompt(cm);
-    const userPayload = `Product context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`;
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 900,
-      temperature: 0.3,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: userPayload },
-      ],
-    });
-    const html = (res.choices[0]?.message?.content ?? "").trim();
-    return {
-      kind: "copy",
-      productHandle: handle,
-      descriptionHtml: html,
-      rationale: proposal.rationale || "Rewrite product copy for AI-search citability.",
-    };
-  } catch (err) {
+  const memory = renderForPrompt(cm);
+  const res = await complete({
+    system: SYSTEM,
+    user: `Product context:\n${JSON.stringify(ctx, null, 2)}${memory ? `\n\n${memory}` : ""}`,
+    format: "text",
+    maxTokens: 900,
+    temperature: 0.3,
+  });
+
+  if (res.error) {
     return {
       kind: "copy",
       productHandle: handle,
       descriptionHtml: typeof ctx.description === "string" ? (ctx.description as string) : "",
-      rationale:
-        proposal.rationale ||
-        `Copy unchanged (LLM error: ${err instanceof Error ? err.message : "unknown"}).`,
+      rationale: proposal.rationale || `Copy unchanged (LLM error: ${res.error}).`,
     };
   }
+
+  return {
+    kind: "copy",
+    productHandle: handle,
+    descriptionHtml: (res.text || "").trim(),
+    rationale: proposal.rationale || "Rewrite product copy for AI-search citability.",
+  };
 }

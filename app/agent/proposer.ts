@@ -11,13 +11,11 @@
  * Respects the central LLM kill switch — no proposals in prod until
  * AGENT_LLM_MODE=live is set.
  */
-import OpenAI from "openai";
 import prisma from "../db.server";
 import type { ClientMemory } from "./clientMemory";
+import { complete } from "./llmClient";
 import { llmEnabled } from "./llmEnabled";
 import type { Signal } from "./types";
-
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 const SYSTEM = `You observe an SEO agent's run on an online store and suggest additions to the store's long-term client memory (brand profile).
 
@@ -50,7 +48,6 @@ export async function proposeFacts(params: {
   if (!llmEnabled()) return [];
 
   try {
-    const client = new OpenAI();
     const payload = {
       shop: { name: params.shopName ?? null, url: params.storefrontUrl ?? null },
       current_memory: params.current ?? null,
@@ -62,18 +59,15 @@ export async function proposeFacts(params: {
       })),
       observations: (params.homeHtmlSnippet || "").slice(0, 6000),
     };
-    const res = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 900,
+    const res = await complete({
+      system: SYSTEM,
+      user: JSON.stringify(payload, null, 2),
+      format: "json",
+      maxTokens: 900,
       temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: JSON.stringify(payload, null, 2) },
-      ],
     });
-    const text = res.choices[0]?.message?.content ?? "";
-    const parsed = JSON.parse(text);
+    if (res.error) return [];
+    const parsed = JSON.parse(res.text || "{}");
     const arr = Array.isArray(parsed.proposals) ? parsed.proposals : [];
     const proposals: ProposedFact[] = arr
       .filter((p: unknown) => typeof p === "object" && p !== null)

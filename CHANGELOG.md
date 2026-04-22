@@ -13,7 +13,21 @@ Body text (if present) shown as indented sub-bullets.
 
 ## 2026-04-22
 
-- **09:15 UTC** — auto-sync: 2026-04-22 09:15 UTC (`58cdeb4`) — 7 files
+- **09:45 UTC** — auto-sync: 2026-04-22 09:45 UTC (`7b4963f`) — 2 files
+        A	agent/scripts/audit_gtm.py
+        A	agent/src/glitch_seo_agent/clients/tag_manager.py
+- **09:40 UTC** — feat(agent): direct theme.liquid GTM installer for the 4 brand stores (`ff1e0af`) — 2 files
+    Follows the ops pattern documented by the operator (reads STORES_JSON
+    from glitch-grow-ads-agent/.env, pulls tokens from the
+    multi-store-theme-manager Postgres Session table, verifies
+    write_themes scope, backs up, PUTs, verify-with-retry, clears the
+    now-redundant shop metafield so the theme-app-embed cannot
+    double-fire).
+    agent/scripts/install_gtm.py:
+    - Idempotent: inserts a marker comment and skips on re-run.
+    - Dry-run mode (--dry-run).
+    - Per-slug mode (--slug storico).
+- **09:15 UTC** — auto-sync: 2026-04-22 09:15 UTC (`4a51c8b`) — 8 files
         M	app/agent/clientMemory.ts
         M	app/routes/app.client-memory.jsx
         A	cli/seed-brand.mjs
